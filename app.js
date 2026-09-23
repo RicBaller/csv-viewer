@@ -29,6 +29,7 @@ const els = {
   prevRowBtn: $('prevRowBtn'),
   nextRowBtn: $('nextRowBtn'),
   deleteRecordBtn: $('deleteRecordBtn'),
+  languageSelect: $('languageSelect'),
 };
 
 // File waiting in the import panel.
@@ -56,7 +57,7 @@ function readFile(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => startImport(file.name, reader.result);
-  reader.onerror = () => alert('Kon het bestand niet lezen.');
+  reader.onerror = () => alert(t('readError'));
   reader.readAsText(file);
 }
 
@@ -87,10 +88,10 @@ function renderColumnNameInputs(width) {
   els.columnNameInputs.replaceChildren();
   for (let i = 0; i < width; i++) {
     const label = document.createElement('label');
-    label.textContent = `Kolom ${i + 1}`;
+    label.textContent = t('column', { n: i + 1 });
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = `Kolom ${i + 1}`;
+    input.placeholder = t('column', { n: i + 1 });
     input.value = pending.customNames[i] || '';
     input.addEventListener('input', () => {
       pending.customNames[i] = input.value;
@@ -105,7 +106,7 @@ function renderColumnNameInputs(width) {
 function importHeaders() {
   const width = pending.rows[0] ? pending.rows[0].length : 0;
   if (els.hasHeader.checked) return pending.rows[0] ? [...pending.rows[0]] : [];
-  return Array.from({ length: width }, (_, i) => (pending.customNames[i] || '').trim() || `Kolom ${i + 1}`);
+  return Array.from({ length: width }, (_, i) => (pending.customNames[i] || '').trim() || t('column', { n: i + 1 }));
 }
 
 function confirmImport() {
@@ -167,7 +168,7 @@ function renderData() {
     name.className = 'col-name';
     name.textContent = h;
     name.dataset.col = c;
-    inner.append(name, deleteButton('Kolom verwijderen', 'delete-col', c));
+    inner.append(name, deleteButton(t('deleteColumn'), 'delete-col', c));
     th.appendChild(inner);
     headRow.appendChild(th);
   });
@@ -180,11 +181,11 @@ function renderData() {
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'rowlink';
-    open.title = 'Open deze rij';
+    open.title = t('openRow');
     open.textContent = String(r + 1);
     open.dataset.action = 'open-row';
     open.dataset.index = r;
-    num.append(deleteButton('Rij verwijderen', 'delete-row', r), open);
+    num.append(deleteButton(t('deleteRow'), 'delete-row', r), open);
     row.forEach((value, c) => {
       const td = tr.insertCell();
       td.className = 'cell';
@@ -204,7 +205,7 @@ function renderRecord() {
   els.rowNumber.max = total;
   els.rowNumber.value = total ? currentRow + 1 : '';
   els.rowNumber.disabled = total === 0;
-  els.rowTotal.textContent = `van ${total}`;
+  els.rowTotal.textContent = t('ofTotal', { n: total });
   els.prevRowBtn.disabled = currentRow <= 0;
   els.nextRowBtn.disabled = currentRow >= total - 1;
   els.deleteRecordBtn.disabled = total === 0;
@@ -237,7 +238,7 @@ function render() {
   els.recordViewBtn.classList.toggle('active', isRecord);
   if (isRecord) renderRecord();
   else renderData();
-  els.fileInfo.textContent = `${data.name} · ${data.rows.length} rijen · ${data.headers.length} kolommen`;
+  els.fileInfo.textContent = `${data.name} · ${t('rows', { n: data.rows.length })} · ${t('columns', { n: data.headers.length })}`;
 }
 
 // ---------- Editing ----------
@@ -284,7 +285,7 @@ els.dataTable.addEventListener('click', (e) => {
       currentRow = i;
       view = 'record';
     } else if (btn.dataset.action === 'delete-col') {
-      if (!confirm(`Kolom "${data.headers[i]}" verwijderen?`)) return;
+      if (!confirm(t('confirmDeleteColumn', { name: data.headers[i] }))) return;
       data.headers.splice(i, 1);
       data.rows.forEach((row) => row.splice(i, 1));
     }
@@ -334,7 +335,7 @@ els.rowNumber.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') els.rowNumber.dispatchEvent(new Event('change'));
 });
 els.deleteRecordBtn.addEventListener('click', () => {
-  if (!confirm(`Rij ${currentRow + 1} verwijderen?`)) return;
+  if (!confirm(t('confirmDeleteRow', { n: currentRow + 1 }))) return;
   data.rows.splice(currentRow, 1);
   render();
 });
@@ -362,7 +363,7 @@ els.downloadBtn.addEventListener('click', () => {
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = data.name.replace(/\.[^.]*$/, '') + '-bewerkt.csv';
+  a.download = data.name.replace(/\.[^.]*$/, '') + `-${t('editedSuffix')}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -383,7 +384,7 @@ els.cancelImportBtn.addEventListener('click', () => {
 });
 
 els.resetBtn.addEventListener('click', () => {
-  if (!confirm('Huidige data sluiten? Niet-gedownloade wijzigingen gaan verloren.')) return;
+  if (!confirm(t('confirmReset'))) return;
   data = null;
   show('dropzone');
 });
@@ -406,5 +407,20 @@ window.addEventListener('drop', (e) => {
   document.body.classList.remove('dragging');
   readFile(e.dataTransfer.files[0]);
 });
+
+// ---------- Language ----------
+
+for (const [code, name] of Object.entries(LANGUAGES)) {
+  els.languageSelect.add(new Option(name, code));
+}
+
+els.languageSelect.addEventListener('change', () => {
+  setLanguage(els.languageSelect.value, { save: true });
+  if (pending) refreshImport();
+  if (data) render();
+});
+
+setLanguage(detectLanguage());
+els.languageSelect.value = lang;
 
 show('dropzone');

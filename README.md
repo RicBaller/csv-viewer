@@ -10,5 +10,6 @@ Open `index.html` in a browser.
 - Choose whether the first row holds column names. If not, enter your own column names.
 - Click a cell to edit it; click a column name to rename it. `Enter` saves, `Esc` cancels.
 - Use `×` to delete a row or a column.
-- Switch to `Rij` view to see one row as column name → value. Browse with `Vorige`/`Volgende`, the arrow keys, or type a row number. Clicking a row number in the table opens that row.
+- Switch to `Row` view to see one row as column name → value. Browse with `Previous`/`Next`, the arrow keys, or type a row number. Clicking a row number in the table opens that row.
 - `Download CSV` saves the edited data.
+- The interface language follows your browser settings. Pick another language in the top bar; the choice is remembered. Supported: English, Dutch, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Russian, Ukrainian, Arabic (right-to-left), Hindi, Indonesian, Chinese (Simplified), Japanese and Korean. Translations live in `i18n.js`.

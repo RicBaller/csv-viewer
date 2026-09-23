@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,86 +9,93 @@
 <body>
   <header class="topbar">
     <h1>CSV Viewer</h1>
+    <div class="topbar-end">
     <div class="actions" id="actions" hidden>
       <span id="fileInfo" class="muted"></span>
-      <div class="toggle" role="group" aria-label="Weergave">
-        <button id="tableViewBtn" type="button" class="secondary">Tabel</button>
-        <button id="recordViewBtn" type="button" class="secondary">Rij</button>
+      <div class="toggle" role="group" data-i18n-aria-label="view">
+        <button id="tableViewBtn" type="button" class="secondary" data-i18n="table">Table</button>
+        <button id="recordViewBtn" type="button" class="secondary" data-i18n="record">Row</button>
       </div>
-      <button id="downloadBtn" type="button">Download CSV</button>
-      <button id="resetBtn" type="button" class="secondary">Nieuw bestand</button>
+      <button id="downloadBtn" type="button" data-i18n="download">Download CSV</button>
+      <button id="resetBtn" type="button" class="secondary" data-i18n="newFile">New file</button>
+    </div>
+    <label class="lang">
+      <span data-i18n="language">Language</span>
+      <select id="languageSelect"></select>
+    </label>
     </div>
   </header>
 
   <main>
     <section id="dropzone" class="dropzone">
-      <p><strong>Sleep een CSV-bestand hierheen</strong></p>
-      <p class="muted">of</p>
+      <p><strong data-i18n="dropTitle">Drag a CSV file here</strong></p>
+      <p class="muted" data-i18n="or">or</p>
       <label class="button">
-        Kies bestand
+        <span data-i18n="chooseFile">Choose file</span>
         <input type="file" id="fileInput" accept=".csv,.tsv,.txt,text/csv" hidden>
       </label>
     </section>
 
     <section id="importPanel" class="panel" hidden>
-      <h2>Bestand inladen: <span id="importName"></span></h2>
+      <h2><span data-i18n="importTitle">Load file:</span> <span id="importName"></span></h2>
       <div class="options">
         <label>
           <input type="checkbox" id="hasHeader" checked>
-          Eerste rij bevat kolomnamen
+          <span data-i18n="hasHeader">First row contains column names</span>
         </label>
         <label>
-          Scheidingsteken
+          <span data-i18n="delimiter">Delimiter</span>
           <select id="delimiter">
-            <option value=",">Komma (,)</option>
-            <option value=";">Puntkomma (;)</option>
-            <option value="&#9;">Tab</option>
-            <option value="|">Pipe (|)</option>
+            <option value="," data-i18n="comma">Comma (,)</option>
+            <option value=";" data-i18n="semicolon">Semicolon (;)</option>
+            <option value="&#9;" data-i18n="tab">Tab</option>
+            <option value="|" data-i18n="pipe">Pipe (|)</option>
           </select>
         </label>
       </div>
 
       <div id="columnNames" hidden>
-        <h3>Kolomnamen</h3>
+        <h3 data-i18n="columnNames">Column names</h3>
         <div id="columnNameInputs" class="column-names"></div>
       </div>
 
-      <h3>Voorbeeld</h3>
+      <h3 data-i18n="preview">Preview</h3>
       <div class="table-wrap preview">
         <table id="previewTable"></table>
       </div>
 
       <div class="panel-actions">
-        <button id="cancelImportBtn" type="button" class="secondary">Annuleren</button>
-        <button id="confirmImportBtn" type="button">Inladen</button>
+        <button id="cancelImportBtn" type="button" class="secondary" data-i18n="cancel">Cancel</button>
+        <button id="confirmImportBtn" type="button" data-i18n="load">Load</button>
       </div>
     </section>
 
     <section id="viewer" hidden>
-      <p class="muted hint">Klik op een cel om te bewerken. Klik op een kolomnaam om die te hernoemen.</p>
+      <p class="muted hint" data-i18n="hint">Click a cell to edit it. Click a column name to rename it.</p>
       <div id="tableView" class="table-wrap">
         <table id="dataTable"></table>
       </div>
 
       <div id="recordView" class="record" hidden>
         <div class="record-nav">
-          <button id="prevRowBtn" type="button" class="secondary">← Vorige</button>
+          <button id="prevRowBtn" type="button" class="secondary" data-i18n="prev">← Previous</button>
           <label>
-            Rij
+            <span data-i18n="row">Row</span>
             <input type="number" id="rowNumber" min="1" step="1">
             <span id="rowTotal" class="muted"></span>
           </label>
-          <button id="nextRowBtn" type="button" class="secondary">Volgende →</button>
-          <button id="deleteRecordBtn" type="button" class="secondary danger">Rij verwijderen</button>
+          <button id="nextRowBtn" type="button" class="secondary" data-i18n="next">Next →</button>
+          <button id="deleteRecordBtn" type="button" class="secondary danger" data-i18n="deleteRow">Delete row</button>
         </div>
         <div class="table-wrap">
           <table id="recordTable"></table>
         </div>
-        <p id="recordEmpty" class="muted" hidden>Geen rijen.</p>
+        <p id="recordEmpty" class="muted" hidden data-i18n="noRows">No rows.</p>
       </div>
     </section>
   </main>
 
+  <script src="i18n.js"></script>
   <script src="csv.js"></script>
   <script src="app.js"></script>
 </body>

@@ -33,6 +33,8 @@ body {
   color: var(--text);
 }
 
+[hidden] { display: none !important; }
+
 .topbar {
   display: flex;
   align-items: center;
@@ -46,7 +48,11 @@ body {
 
 .topbar h1 { font-size: 18px; margin: 0; }
 
+.topbar-end { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.lang { display: flex; align-items: center; gap: 6px; }
 
 main { padding: 24px; }
 
@@ -138,8 +144,8 @@ table { border-collapse: collapse; width: max-content; min-width: 100%; }
 th, td {
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  text-align: left;
+  border-inline-end: 1px solid var(--border);
+  text-align: start;
   vertical-align: top;
   max-width: 320px;
   white-space: pre-wrap;
@@ -162,11 +168,11 @@ tbody tr:nth-child(even) { background: var(--row-alt); }
 
 td.rownum, th.rownum {
   color: var(--muted);
-  text-align: right;
+  text-align: end;
   white-space: nowrap;
   width: 1%;
   position: sticky;
-  left: 0;
+  inset-inline-start: 0;
   background: var(--surface);
 }
 
@@ -192,8 +198,8 @@ td.editing input, th.editing input { width: 100%; min-width: 120px; }
 
 .toggle { display: inline-flex; }
 .toggle button { border-radius: 0; }
-.toggle button:first-child { border-radius: 6px 0 0 6px; }
-.toggle button:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+.toggle button:first-child { border-start-start-radius: 6px; border-end-start-radius: 6px; }
+.toggle button:last-child { border-start-end-radius: 6px; border-end-end-radius: 6px; margin-inline-start: -1px; }
 .toggle button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 
 button.danger { color: var(--danger); }
@@ -220,7 +226,7 @@ button:disabled { opacity: .4; cursor: default; }
   background: var(--bg);
   color: var(--text);
 }
-.record-nav .danger { margin-left: auto; }
+.record-nav .danger { margin-inline-start: auto; }
 
 #recordTable th {
   position: static;
@@ -230,4 +236,4 @@ button:disabled { opacity: .4; cursor: default; }
 }
 #recordTable td { max-width: none; cursor: text; }
 #recordTable td:hover, #recordTable th:hover { background: var(--hover); }
-#recordTable .colnum { color: var(--muted); font-weight: normal; margin-right: 6px; }
+#recordTable .colnum { color: var(--muted); font-weight: normal; margin-inline-end: 6px; }
