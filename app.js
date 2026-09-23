@@ -234,6 +234,7 @@ function render() {
   const isRecord = view === 'record';
   els.tableView.hidden = isRecord;
   els.recordView.hidden = !isRecord;
+  els.viewer.classList.toggle('record-mode', isRecord);
   els.tableViewBtn.classList.toggle('active', !isRecord);
   els.recordViewBtn.classList.toggle('active', isRecord);
   if (isRecord) renderRecord();

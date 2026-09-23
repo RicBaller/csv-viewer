@@ -131,7 +131,6 @@ select, input[type="text"] {
 
 .table-wrap {
   overflow: auto;
-  max-height: calc(100vh - 150px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -213,7 +212,7 @@ button:disabled { opacity: .4; cursor: default; }
   text-decoration: underline;
 }
 
-.record { max-width: 960px; }
+.record, .record-mode .hint { max-width: 960px; margin-inline: auto; }
 
 .record-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .record-nav label { display: flex; align-items: center; gap: 6px; }
