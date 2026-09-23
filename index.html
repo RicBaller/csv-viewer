@@ -3,7 +3,99 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CSV Viewer</title>
+  <title>CSV Viewer & Editor – Open CSV Files Online, Free</title>
+  <meta name="description" content="Open, view and edit CSV and TSV files in your browser. Free, no sign-up and no upload: your data stays on your device. Download the edited CSV in one click.">
+  <link rel="canonical" href="https://csv-viewer.app/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CSV Viewer">
+  <meta property="og:title" content="CSV Viewer & Editor – Open CSV Files Online, Free">
+  <meta property="og:description" content="View and edit CSV files in your browser. Free, no sign-up, no upload.">
+  <meta property="og:url" content="https://csv-viewer.app/">
+  <meta property="og:image" content="https://csv-viewer.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="CSV Viewer: view and edit CSV files in your browser">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1f25" media="(prefers-color-scheme: dark)">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://csv-viewer.app/#website",
+        "url": "https://csv-viewer.app/",
+        "name": "CSV Viewer",
+        "alternateName": "EditCSV",
+        "inLanguage": "en"
+      },
+      {
+        "@type": "WebApplication",
+        "@id": "https://csv-viewer.app/#app",
+        "name": "CSV Viewer",
+        "url": "https://csv-viewer.app/",
+        "description": "Open, view and edit CSV and TSV files in your browser. Your data stays on your device.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "featureList": [
+          "Open CSV and TSV files without uploading them",
+          "Edit cells and rename columns",
+          "Delete rows and columns",
+          "Row view: one row at a time",
+          "Comma, semicolon, tab and pipe delimiters",
+          "Download the edited CSV",
+          "Available in 17 languages"
+        ],
+        "screenshot": "https://csv-viewer.app/og-image.png",
+        "author": { "@id": "https://csv-viewer.app/#author" }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://csv-viewer.app/#author",
+        "name": "Rick Baller",
+        "url": "https://github.com/RicBaller"
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I open a CSV file?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Drag the file onto this page or click “Choose file”. Check the preview, pick the delimiter if needed and click “Load”." }
+          },
+          {
+            "@type": "Question",
+            "name": "Is my file uploaded?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. Your file is read and processed only in your browser. No data is sent to a server." }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I save my changes?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Click “Download CSV”. You get a new CSV file with all your changes, with the same delimiter as the original file." }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I open CSV files from Excel?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. The delimiter is detected automatically, also the semicolon that Excel often uses. The downloaded file opens correctly in Excel, special characters included." }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -34,6 +126,27 @@
         <span data-i18n="chooseFile">Choose file</span>
         <input type="file" id="fileInput" accept=".csv,.tsv,.txt,text/csv" hidden>
       </label>
+    </section>
+
+    <section id="about" class="about">
+      <h2 data-i18n="aboutTitle">View and edit CSV files online</h2>
+      <p data-i18n="aboutIntro">CSV Viewer opens CSV and TSV files directly in your browser. View your data as a table, edit cells, rename or delete columns and rows, and download the result as a new CSV file. Free, no account, nothing to install.</p>
+      <ul class="features">
+        <li><strong data-i18n="featPrivateTitle">Private</strong> <span data-i18n="featPrivate">Your file never leaves your device. Everything runs locally in your browser.</span></li>
+        <li><strong data-i18n="featEditTitle">Edit</strong> <span data-i18n="featEdit">Click a cell or column name to change it. Delete rows and columns, or select several rows and delete them at once.</span></li>
+        <li><strong data-i18n="featRowTitle">Row view</strong> <span data-i18n="featRow">See one row at a time as column name and value. Handy for wide files.</span></li>
+        <li><strong data-i18n="featDelimiterTitle">Any delimiter</strong> <span data-i18n="featDelimiter">Comma, semicolon, tab or pipe, with or without a header row.</span></li>
+      </ul>
+
+      <h2 data-i18n="faqTitle">Frequently asked questions</h2>
+      <h3 data-i18n="faqOpenQ">How do I open a CSV file?</h3>
+      <p data-i18n="faqOpenA">Drag the file onto this page or click “Choose file”. Check the preview, pick the delimiter if needed and click “Load”.</p>
+      <h3 data-i18n="faqUploadQ">Is my file uploaded?</h3>
+      <p data-i18n="faqUploadA">No. Your file is read and processed only in your browser. No data is sent to a server.</p>
+      <h3 data-i18n="faqSaveQ">How do I save my changes?</h3>
+      <p data-i18n="faqSaveA">Click “Download CSV”. You get a new CSV file with all your changes, with the same delimiter as the original file.</p>
+      <h3 data-i18n="faqExcelQ">Can I open CSV files from Excel?</h3>
+      <p data-i18n="faqExcelA">Yes. The delimiter is detected automatically, also the semicolon that Excel often uses. The downloaded file opens correctly in Excel, special characters included.</p>
     </section>
 
     <section id="importPanel" class="panel" hidden>
@@ -104,6 +217,8 @@
     <span id="credits"></span>
     <span aria-hidden="true">·</span>
     <a href="changelog.html" data-i18n="changelog">Changelog</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://github.com/RicBaller/csv-viewer" data-i18n="sourceCode">Source code</a>
   </footer>
 
   <script src="i18n.js"></script>

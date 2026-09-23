@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id);
 
 const els = {
   dropzone: $('dropzone'),
+  about: $('about'),
   fileInput: $('fileInput'),
   importPanel: $('importPanel'),
   importName: $('importName'),
@@ -54,6 +55,7 @@ const PREVIEW_ROWS = 5;
 
 function show(section) {
   els.dropzone.hidden = section !== 'dropzone';
+  els.about.hidden = section !== 'dropzone';
   els.importPanel.hidden = section !== 'import';
   els.viewer.hidden = section !== 'viewer';
   els.actions.hidden = section !== 'viewer';

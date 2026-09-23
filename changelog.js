@@ -3,6 +3,26 @@
 
 const CHANGELOG = [
   {
+    version: '1.4.0',
+    date: '2026-09-23',
+    changes: {
+      en: [
+        'The start page explains what CSV Viewer does and answers frequently asked questions.',
+        'New app icon, also when you add CSV Viewer to your home screen.',
+        'Shared links now show a preview image.',
+        'Footer links to the source code on GitHub.',
+        'Friendly page for links that do not exist.',
+      ],
+      nl: [
+        'De startpagina legt uit wat CSV Viewer doet en beantwoordt veelgestelde vragen.',
+        'Nieuw app-icoon, ook als je CSV Viewer aan je beginscherm toevoegt.',
+        'Gedeelde links tonen nu een voorbeeldafbeelding.',
+        'Footer linkt naar de broncode op GitHub.',
+        'Nette pagina voor links die niet bestaan.',
+      ],
+    },
+  },
+  {
     version: '1.3.0',
     date: '2026-09-23',
     changes: {
