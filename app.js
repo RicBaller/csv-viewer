@@ -30,6 +30,10 @@ const els = {
   nextRowBtn: $('nextRowBtn'),
   deleteRecordBtn: $('deleteRecordBtn'),
   languageSelect: $('languageSelect'),
+  tableTools: $('tableTools'),
+  selectToggleBtn: $('selectToggleBtn'),
+  selectedCount: $('selectedCount'),
+  deleteSelectedBtn: $('deleteSelectedBtn'),
 };
 
 // File waiting in the import panel.
@@ -41,6 +45,10 @@ let data = null; // { name, delimiter, headers: string[], rows: string[][] }
 // Active view of the loaded data: 'table' or 'record' (one row at a time).
 let view = 'table';
 let currentRow = 0; // zero-based index shown in record view
+
+// Row selection for bulk delete. Holds row arrays, so indices can shift without breaking it.
+let selecting = false;
+let selected = new Set();
 
 const PREVIEW_ROWS = 5;
 
@@ -119,6 +127,7 @@ function confirmImport() {
   };
   pending = null;
   currentRow = 0;
+  stopSelecting();
   render();
   show('viewer');
 }
@@ -157,7 +166,11 @@ function renderData() {
   const headRow = thead.insertRow();
   const corner = document.createElement('th');
   corner.className = 'rownum';
-  corner.textContent = '#';
+  if (selecting) {
+    corner.appendChild(checkbox('select-all', -1, t('selectAll')));
+  } else {
+    corner.textContent = '#';
+  }
   headRow.appendChild(corner);
 
   data.headers.forEach((h, c) => {
@@ -176,8 +189,14 @@ function renderData() {
   const tbody = document.createElement('tbody');
   data.rows.forEach((row, r) => {
     const tr = tbody.insertRow();
+    tr.classList.toggle('selected', selected.has(row));
     const num = tr.insertCell();
     num.className = 'rownum';
+    if (selecting) {
+      const box = checkbox('select-row', r, t('selectRow', { n: r + 1 }));
+      box.checked = selected.has(row);
+      num.appendChild(box);
+    }
     const open = document.createElement('button');
     open.type = 'button';
     open.className = 'rowlink';
@@ -196,6 +215,35 @@ function renderData() {
   });
 
   els.dataTable.replaceChildren(thead, tbody);
+  updateSelectionUI();
+}
+
+function checkbox(action, index, label) {
+  const box = document.createElement('input');
+  box.type = 'checkbox';
+  box.dataset.action = action;
+  box.dataset.index = index;
+  box.setAttribute('aria-label', label);
+  return box;
+}
+
+function updateSelectionUI() {
+  els.selectToggleBtn.textContent = t(selecting ? 'stopSelecting' : 'selectRows');
+  els.selectToggleBtn.classList.toggle('active', selecting);
+  els.selectedCount.hidden = !selecting;
+  els.selectedCount.textContent = t('selectedCount', { n: selected.size });
+  els.deleteSelectedBtn.hidden = !selecting;
+  els.deleteSelectedBtn.disabled = selected.size === 0;
+  const all = els.dataTable.querySelector('input[data-action="select-all"]');
+  if (all) {
+    all.checked = data.rows.length > 0 && selected.size === data.rows.length;
+    all.indeterminate = selected.size > 0 && !all.checked;
+  }
+}
+
+function stopSelecting() {
+  selecting = false;
+  selected.clear();
 }
 
 function renderRecord() {
@@ -234,6 +282,7 @@ function render() {
   const isRecord = view === 'record';
   els.tableView.hidden = isRecord;
   els.recordView.hidden = !isRecord;
+  els.tableTools.hidden = isRecord;
   els.viewer.classList.toggle('record-mode', isRecord);
   els.tableViewBtn.classList.toggle('active', !isRecord);
   els.recordViewBtn.classList.toggle('active', isRecord);
@@ -281,6 +330,8 @@ els.dataTable.addEventListener('click', (e) => {
   if (btn) {
     const i = Number(btn.dataset.index);
     if (btn.dataset.action === 'delete-row') {
+      if (!confirm(t('confirmDeleteRow', { n: i + 1 }))) return;
+      selected.delete(data.rows[i]);
       data.rows.splice(i, 1);
     } else if (btn.dataset.action === 'open-row') {
       currentRow = i;
@@ -307,6 +358,34 @@ els.dataTable.addEventListener('click', (e) => {
     const c = Number(colName.dataset.col);
     startEdit(colName, data.headers[c], (v) => { data.headers[c] = v; });
   }
+});
+
+els.dataTable.addEventListener('change', (e) => {
+  const box = e.target.closest('input[type="checkbox"][data-action]');
+  if (!box) return;
+  if (box.dataset.action === 'select-all') {
+    selected = box.checked ? new Set(data.rows) : new Set();
+    renderData();
+    return;
+  }
+  const row = data.rows[Number(box.dataset.index)];
+  if (box.checked) selected.add(row);
+  else selected.delete(row);
+  box.closest('tr').classList.toggle('selected', box.checked);
+  updateSelectionUI();
+});
+
+els.selectToggleBtn.addEventListener('click', () => {
+  if (selecting) stopSelecting();
+  else selecting = true;
+  render();
+});
+
+els.deleteSelectedBtn.addEventListener('click', () => {
+  if (!selected.size || !confirm(t('confirmDeleteRows', { n: selected.size }))) return;
+  data.rows = data.rows.filter((row) => !selected.has(row));
+  selected.clear();
+  render();
 });
 
 els.recordTable.addEventListener('click', (e) => {
@@ -337,6 +416,7 @@ els.rowNumber.addEventListener('keydown', (e) => {
 });
 els.deleteRecordBtn.addEventListener('click', () => {
   if (!confirm(t('confirmDeleteRow', { n: currentRow + 1 }))) return;
+  selected.delete(data.rows[currentRow]);
   data.rows.splice(currentRow, 1);
   render();
 });
@@ -387,6 +467,7 @@ els.cancelImportBtn.addEventListener('click', () => {
 els.resetBtn.addEventListener('click', () => {
   if (!confirm(t('confirmReset'))) return;
   data = null;
+  stopSelecting();
   show('dropzone');
 });
 

@@ -72,6 +72,11 @@
 
     <section id="viewer" hidden>
       <p class="muted hint" data-i18n="hint">Click a cell to edit it. Click a column name to rename it.</p>
+      <div id="tableTools" class="table-tools">
+        <button id="selectToggleBtn" type="button" class="secondary"></button>
+        <span id="selectedCount" class="muted" hidden></span>
+        <button id="deleteSelectedBtn" type="button" class="secondary danger" data-i18n="deleteSelected" hidden>Delete selected</button>
+      </div>
       <div id="tableView" class="table-wrap">
         <table id="dataTable"></table>
       </div>

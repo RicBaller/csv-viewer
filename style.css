@@ -161,6 +161,7 @@ thead th {
 }
 
 tbody tr:nth-child(even) { background: var(--row-alt); }
+tbody tr.selected, tbody tr.selected td.rownum { background: var(--hover); }
 
 #dataTable td.cell, #dataTable th .col-name { cursor: text; }
 #dataTable td.cell:hover { background: var(--hover); }
@@ -194,6 +195,11 @@ td.editing, th.editing { padding: 2px; }
 td.editing input, th.editing input { width: 100%; min-width: 120px; }
 
 .hint { margin: 0 0 8px; }
+
+.table-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.table-tools button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+td.rownum input[type="checkbox"] { margin-inline-end: 4px; vertical-align: middle; }
 
 .toggle { display: inline-flex; }
 .toggle button { border-radius: 0; }
