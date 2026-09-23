@@ -35,7 +35,7 @@ jobs:
               --data '{"purge_everything":true}')
 
             if [ "$(echo "$response" | jq -r '.success')" = "true" ]; then
-              echo "Cache purged for ${site}"
+              echo "::notice::Cache purged for ${site}"
             else
               echo "::error::Cache purge failed for ${site}"
               echo "$response" | jq '.errors'
