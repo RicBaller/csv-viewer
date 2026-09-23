@@ -492,17 +492,9 @@ window.addEventListener('drop', (e) => {
 
 // ---------- Language ----------
 
-for (const [code, name] of Object.entries(LANGUAGES)) {
-  els.languageSelect.add(new Option(name, code));
-}
-
-els.languageSelect.addEventListener('change', () => {
-  setLanguage(els.languageSelect.value, { save: true });
+initSite(() => {
   if (pending) refreshImport();
   if (data) render();
 });
-
-setLanguage(detectLanguage());
-els.languageSelect.value = lang;
 
 show('dropzone');

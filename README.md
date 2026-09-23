@@ -13,3 +13,4 @@ Open `index.html` in a browser.
 - Switch to `Row` view to see one row as column name → value. Browse with `Previous`/`Next`, the arrow keys, or type a row number. Clicking a row number in the table opens that row.
 - `Download CSV` saves the edited data.
 - The interface language follows your browser settings. Pick another language in the top bar; the choice is remembered. Supported: English, Dutch, German, French, Spanish, Italian, Portuguese, Polish, Turkish, Russian, Ukrainian, Arabic (right-to-left), Hindi, Indonesian, Chinese (Simplified), Japanese and Korean. Translations live in `i18n.js`.
+- The footer links to `changelog.html`, the release history. Add new releases at the top of `CHANGELOG` in `changelog.js`.
