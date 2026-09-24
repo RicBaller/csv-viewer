@@ -192,6 +192,12 @@ tbody tr.selected, tbody tr.selected td.rownum { background: var(--hover); }
 #dataTable td.cell, #dataTable th .col-name { cursor: text; }
 #dataTable td.cell:hover { background: var(--hover); }
 
+/* Long values are clipped to four lines until the row is dragged taller. */
+#dataTable .cell-content { max-height: var(--cell-max, 6em); overflow: hidden; }
+#dataTable.row-resize, #dataTable.row-resize td.cell, #dataTable.row-resize .rowlink,
+body.row-resizing, body.row-resizing * { cursor: row-resize; }
+body.row-resizing { user-select: none; }
+
 td.rownum, th.rownum {
   color: var(--muted);
   text-align: end;

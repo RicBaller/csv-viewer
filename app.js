@@ -51,6 +51,13 @@ let currentRow = 0; // zero-based index shown in record view
 let selecting = false;
 let selected = new Set();
 
+// Table rows start clipped to a few lines; dragging a row's bottom edge sets its
+// maximum cell height in px. Keyed by row array, like the selection.
+const rowHeights = new WeakMap();
+const RESIZE_EDGE = 5; // px around a row border that starts a resize
+const MIN_ROW_HEIGHT = 21; // one line of text
+let justResized = false; // swallows the click that ends a resize drag
+
 const PREVIEW_ROWS = 5;
 
 function show(section) {
@@ -207,12 +214,17 @@ function renderData() {
     open.dataset.action = 'open-row';
     open.dataset.index = r;
     num.append(deleteButton(t('deleteRow'), 'delete-row', r), open);
+    const height = rowHeights.get(row);
+    if (height) tr.style.setProperty('--cell-max', `${height}px`);
     row.forEach((value, c) => {
       const td = tr.insertCell();
       td.className = 'cell';
-      td.textContent = value;
       td.dataset.row = r;
       td.dataset.col = c;
+      const content = document.createElement('div');
+      content.className = 'cell-content';
+      content.textContent = value;
+      td.appendChild(content);
     });
   });
 
@@ -327,7 +339,49 @@ function startEdit(el, value, onSave) {
   input.addEventListener('blur', () => finish(true));
 }
 
+// Returns the row whose bottom border is under the pointer, or null.
+function resizeRowAt(e) {
+  const td = e.target.closest('tbody td');
+  if (!td || td.classList.contains('editing')) return null;
+  const tr = td.parentElement;
+  const rect = td.getBoundingClientRect();
+  if (rect.bottom - e.clientY <= RESIZE_EDGE) return tr;
+  if (e.clientY - rect.top <= RESIZE_EDGE) return tr.previousElementSibling;
+  return null;
+}
+
+els.dataTable.addEventListener('pointermove', (e) => {
+  if (!e.buttons) els.dataTable.classList.toggle('row-resize', !!resizeRowAt(e));
+});
+
+els.dataTable.addEventListener('pointerdown', (e) => {
+  const tr = e.button === 0 && resizeRowAt(e);
+  if (!tr) return;
+  e.preventDefault();
+  const row = data.rows[tr.sectionRowIndex];
+  const startY = e.clientY;
+  const contents = [...tr.querySelectorAll('.cell-content')];
+  const startHeight = Math.max(MIN_ROW_HEIGHT, ...contents.map((el) => el.offsetHeight));
+
+  const move = (ev) => {
+    const height = Math.max(MIN_ROW_HEIGHT, Math.round(startHeight + ev.clientY - startY));
+    rowHeights.set(row, height);
+    tr.style.setProperty('--cell-max', `${height}px`);
+  };
+  const up = () => {
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    document.body.classList.remove('row-resizing');
+    justResized = true;
+    setTimeout(() => { justResized = false; });
+  };
+  document.body.classList.add('row-resizing');
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+});
+
 els.dataTable.addEventListener('click', (e) => {
+  if (justResized) return;
   const btn = e.target.closest('button[data-action]');
   if (btn) {
     const i = Number(btn.dataset.index);
