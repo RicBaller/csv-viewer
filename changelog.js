@@ -3,6 +3,20 @@
 
 const CHANGELOG = [
   {
+    version: '1.5.0',
+    date: '2026-09-24',
+    changes: {
+      en: [
+        'Long cell values are cut off after four lines, so rows stay compact.',
+        'Drag the line below a row to make it taller and see more of its content.',
+      ],
+      nl: [
+        'Lange celwaarden worden na vier regels afgekapt, zodat rijen compact blijven.',
+        'Sleep de lijn onder een rij omlaag om die hoger te maken en meer inhoud te zien.',
+      ],
+    },
+  },
+  {
     version: '1.4.0',
     date: '2026-09-23',
     changes: {
