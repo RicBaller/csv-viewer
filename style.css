@@ -194,9 +194,18 @@ tbody tr.selected, tbody tr.selected td.rownum { background: var(--hover); }
 
 /* Long values are clipped to four lines until the row is dragged taller. */
 #dataTable .cell-content { max-height: var(--cell-max, 6em); overflow: hidden; }
-#dataTable.row-resize, #dataTable.row-resize td.cell, #dataTable.row-resize .rowlink,
-body.row-resizing, body.row-resizing * { cursor: row-resize; }
-body.row-resizing { user-select: none; }
+
+/* Column widths come from the header cells (set in app.js), so the table does not stretch
+   and cells ignore the default max-width. Long titles are cut off with an ellipsis. */
+#dataTable { min-width: 0; }
+#dataTable th, #dataTable td { max-width: none; }
+#dataTable .col-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dataTable .th-inner .delete { flex-shrink: 0; }
+#dataTable td.editing input, #dataTable th.editing input { min-width: 0; }
+
+#dataTable.row-resize, #dataTable.row-resize *, body.row-resize, body.row-resize * { cursor: row-resize; }
+#dataTable.col-resize, #dataTable.col-resize *, body.col-resize, body.col-resize * { cursor: col-resize; }
+body.resizing { user-select: none; }
 
 td.rownum, th.rownum {
   color: var(--muted);

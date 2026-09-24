@@ -9,10 +9,12 @@ const CHANGELOG = [
       en: [
         'Long cell values are cut off after four lines, so rows stay compact.',
         'Drag the line below a row to make it taller and see more of its content.',
+        'Columns start as wide as their title and can be resized by dragging the line between them.',
       ],
       nl: [
         'Lange celwaarden worden na vier regels afgekapt, zodat rijen compact blijven.',
         'Sleep de lijn onder een rij omlaag om die hoger te maken en meer inhoud te zien.',
+        'Kolommen zijn standaard zo breed als hun titel en je kunt ze breder of smaller slepen.',
       ],
     },
   },

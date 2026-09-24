@@ -41,7 +41,7 @@ const els = {
 let pending = null; // { name, text, rows, customNames }
 
 // Loaded data.
-let data = null; // { name, delimiter, headers: string[], rows: string[][] }
+let data = null; // { name, delimiter, headers: string[], rows: string[][], widths: px[] set by dragging }
 
 // Active view of the loaded data: 'table' or 'record' (one row at a time).
 let view = 'table';
@@ -54,9 +54,14 @@ let selected = new Set();
 // Table rows start clipped to a few lines; dragging a row's bottom edge sets its
 // maximum cell height in px. Keyed by row array, like the selection.
 const rowHeights = new WeakMap();
-const RESIZE_EDGE = 5; // px around a row border that starts a resize
+const RESIZE_EDGE = 5; // px around a row or column border that starts a resize
 const MIN_ROW_HEIGHT = 21; // one line of text
+// Columns start as wide as their title, within these bounds, until dragged.
+const MIN_COL_WIDTH = 80;
+const MAX_COL_WIDTH = 320;
+const HEADER_CHROME = 56; // cell padding, border, gap and delete button around the title
 let justResized = false; // swallows the click that ends a resize drag
+const measureCtx = document.createElement('canvas').getContext('2d');
 
 const PREVIEW_ROWS = 5;
 
@@ -133,6 +138,7 @@ function confirmImport() {
     delimiter: els.delimiter.value,
     headers: importHeaders(),
     rows: pending.rows.slice(hasHeader ? 1 : 0),
+    widths: [],
   };
   pending = null;
   currentRow = 0;
@@ -189,6 +195,7 @@ function renderData() {
     const name = document.createElement('span');
     name.className = 'col-name';
     name.textContent = h;
+    name.title = h;
     name.dataset.col = c;
     inner.append(name, deleteButton(t('deleteColumn'), 'delete-col', c));
     th.appendChild(inner);
@@ -229,7 +236,21 @@ function renderData() {
   });
 
   els.dataTable.replaceChildren(thead, tbody);
+  sizeColumns(headRow);
   updateSelectionUI();
+}
+
+// Gives each column its dragged width, or one that fits its title.
+function sizeColumns(headRow) {
+  const cells = [...headRow.cells].slice(1);
+  if (!cells.length) return;
+  const style = getComputedStyle(cells[0]);
+  measureCtx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  cells.forEach((th, c) => {
+    const fit = Math.ceil(measureCtx.measureText(data.headers[c]).width) + HEADER_CHROME;
+    const width = data.widths[c] ?? Math.min(MAX_COL_WIDTH, Math.max(MIN_COL_WIDTH, fit));
+    th.style.width = `${width}px`;
+  });
 }
 
 function checkbox(action, index, label) {
@@ -339,45 +360,76 @@ function startEdit(el, value, onSave) {
   input.addEventListener('blur', () => finish(true));
 }
 
-// Returns the row whose bottom border is under the pointer, or null.
-function resizeRowAt(e) {
-  const td = e.target.closest('tbody td');
-  if (!td || td.classList.contains('editing')) return null;
-  const tr = td.parentElement;
-  const rect = td.getBoundingClientRect();
-  if (rect.bottom - e.clientY <= RESIZE_EDGE) return tr;
-  if (e.clientY - rect.top <= RESIZE_EDGE) return tr.previousElementSibling;
+// Returns the border under the pointer: { col } for a column's end border,
+// { tr } for a row's bottom border, or null. Columns win at a corner.
+function resizeAt(e) {
+  const cell = e.target.closest('th, td');
+  if (!cell || cell.classList.contains('editing')) return null;
+  const rect = cell.getBoundingClientRect();
+  const rtl = document.documentElement.dir === 'rtl';
+  const toEnd = rtl ? e.clientX - rect.left : rect.right - e.clientX;
+  const toStart = rtl ? rect.right - e.clientX : e.clientX - rect.left;
+  const colCell = toEnd <= RESIZE_EDGE ? cell : toStart <= RESIZE_EDGE ? cell.previousElementSibling : null;
+  if (colCell && colCell.cellIndex > 0) return { col: colCell.cellIndex - 1 };
+
+  if (cell.tagName !== 'TD') return null;
+  const tr = cell.parentElement;
+  if (rect.bottom - e.clientY <= RESIZE_EDGE) return { tr };
+  if (e.clientY - rect.top <= RESIZE_EDGE && tr.previousElementSibling) return { tr: tr.previousElementSibling };
   return null;
 }
 
-els.dataTable.addEventListener('pointermove', (e) => {
-  if (!e.buttons) els.dataTable.classList.toggle('row-resize', !!resizeRowAt(e));
-});
-
-els.dataTable.addEventListener('pointerdown', (e) => {
-  const tr = e.button === 0 && resizeRowAt(e);
-  if (!tr) return;
+// Tracks a drag from pointerdown until release; onMove gets the distance moved.
+function dragResize(e, cursor, onMove) {
   e.preventDefault();
-  const row = data.rows[tr.sectionRowIndex];
+  const startX = e.clientX;
   const startY = e.clientY;
-  const contents = [...tr.querySelectorAll('.cell-content')];
-  const startHeight = Math.max(MIN_ROW_HEIGHT, ...contents.map((el) => el.offsetHeight));
-
-  const move = (ev) => {
-    const height = Math.max(MIN_ROW_HEIGHT, Math.round(startHeight + ev.clientY - startY));
-    rowHeights.set(row, height);
-    tr.style.setProperty('--cell-max', `${height}px`);
-  };
+  const rtl = document.documentElement.dir === 'rtl';
+  const move = (ev) => onMove((rtl ? -1 : 1) * (ev.clientX - startX), ev.clientY - startY);
   const up = () => {
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', up);
-    document.body.classList.remove('row-resizing');
+    document.body.classList.remove('resizing', cursor);
     justResized = true;
     setTimeout(() => { justResized = false; });
   };
-  document.body.classList.add('row-resizing');
+  document.body.classList.add('resizing', cursor);
   document.addEventListener('pointermove', move);
   document.addEventListener('pointerup', up);
+}
+
+els.dataTable.addEventListener('pointermove', (e) => {
+  if (e.buttons) return;
+  const target = resizeAt(e);
+  els.dataTable.classList.toggle('col-resize', target?.col !== undefined);
+  els.dataTable.classList.toggle('row-resize', !!target?.tr);
+});
+
+els.dataTable.addEventListener('pointerdown', (e) => {
+  const target = e.button === 0 && resizeAt(e);
+  if (!target) return;
+
+  if (target.tr) {
+    const { tr } = target;
+    const row = data.rows[tr.sectionRowIndex];
+    const contents = [...tr.querySelectorAll('.cell-content')];
+    const startHeight = Math.max(MIN_ROW_HEIGHT, ...contents.map((el) => el.offsetHeight));
+    dragResize(e, 'row-resize', (dx, dy) => {
+      const height = Math.max(MIN_ROW_HEIGHT, Math.round(startHeight + dy));
+      rowHeights.set(row, height);
+      tr.style.setProperty('--cell-max', `${height}px`);
+    });
+    return;
+  }
+
+  const { col } = target;
+  const th = els.dataTable.tHead.rows[0].cells[col + 1];
+  const startWidth = th.offsetWidth;
+  dragResize(e, 'col-resize', (dx) => {
+    const width = Math.max(MIN_COL_WIDTH, Math.round(startWidth + dx));
+    data.widths[col] = width;
+    th.style.width = `${width}px`;
+  });
 });
 
 els.dataTable.addEventListener('click', (e) => {
@@ -395,6 +447,7 @@ els.dataTable.addEventListener('click', (e) => {
     } else if (btn.dataset.action === 'delete-col') {
       if (!confirm(t('confirmDeleteColumn', { name: data.headers[i] }))) return;
       data.headers.splice(i, 1);
+      data.widths.splice(i, 1);
       data.rows.forEach((row) => row.splice(i, 1));
     }
     render();
