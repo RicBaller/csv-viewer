@@ -32,6 +32,7 @@ const els = {
   nextRowBtn: $('nextRowBtn'),
   deleteRecordBtn: $('deleteRecordBtn'),
   languageSelect: $('languageSelect'),
+  changelogLink: $('changelogLink'),
   tableTools: $('tableTools'),
   selectToggleBtn: $('selectToggleBtn'),
   selectedCount: $('selectedCount'),
@@ -78,6 +79,8 @@ function show(section) {
   els.importPanel.hidden = section !== 'import';
   els.viewer.hidden = section !== 'viewer';
   els.actions.hidden = section !== 'viewer';
+  // With a file open, the changelog opens in a new tab so the unsaved data stays.
+  els.changelogLink.target = section === 'dropzone' ? '' : '_blank';
 }
 
 // ---------- Loading a file ----------
