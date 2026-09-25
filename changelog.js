@@ -3,6 +3,32 @@
 
 const CHANGELOG = [
   {
+    version: '1.6.0',
+    date: '2026-09-25',
+    changes: {
+      en: [
+        'Add rows with the button above the table, the empty row at the bottom, or the + next to a row number to insert one above or below.',
+        'Add columns the same way: with the button, the empty column on the right, or the + next to a column name to insert one left or right.',
+        'Start an empty file with one column and one row, without opening a file.',
+        'Turn the header row off to treat the first row as data; the download then has no header row.',
+        'While editing, Tab and Shift+Tab save the cell and move to the next or previous one.',
+        'Use the up and down arrows to move to the cell above or below, and left and right once the cursor reaches the edge of the text.',
+        'The select-all checkbox lines up with the row checkboxes, and the # stays visible while selecting.',
+        'The source code link opens in a new tab, as does the changelog link while a file is open.',
+      ],
+      nl: [
+        'Voeg rijen toe met de knop boven de tabel, de lege rij onderaan, of de + naast een rijnummer om er een boven of onder in te voegen.',
+        'Voeg op dezelfde manier kolommen toe: met de knop, de lege kolom rechts, of de + naast een kolomnaam om er een links of rechts in te voegen.',
+        'Begin een leeg bestand met één kolom en één rij, zonder een bestand te openen.',
+        'Zet de kopregel uit om de eerste rij als data te behandelen; de download heeft dan geen kopregel.',
+        'Tijdens het bewerken slaan Tab en Shift+Tab de cel op en ga je naar de volgende of vorige.',
+        'Ga met de pijltjes omhoog en omlaag naar de cel erboven of eronder, en met links en rechts zodra de cursor aan de rand van de tekst staat.',
+        'Het vakje om alles te selecteren staat in lijn met de rijvakjes, en de # blijft zichtbaar tijdens het selecteren.',
+        'De link naar de broncode opent in een nieuw tabblad, net als de changelog-link zolang er een bestand open is.',
+      ],
+    },
+  },
+  {
     version: '1.5.0',
     date: '2026-09-24',
     changes: {
