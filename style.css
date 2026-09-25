@@ -103,7 +103,7 @@ button.secondary {
 }
 
 .dropzone p { margin: 4px 0; }
-.dropzone .button { margin-top: 8px; }
+.dropzone-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
 .about { max-width: 720px; margin: 0 auto 24px; }
 .about h2 { font-size: 18px; margin: 32px 0 8px; }

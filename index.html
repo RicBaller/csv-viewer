@@ -51,6 +51,7 @@
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
         "featureList": [
           "Open CSV and TSV files without uploading them",
+          "Start a new CSV file from scratch",
           "Edit cells and rename columns",
           "Add, insert and delete rows and columns",
           "Row view: one row at a time",
@@ -122,10 +123,13 @@
     <section id="dropzone" class="dropzone">
       <p><strong data-i18n="dropTitle">Drag a CSV file here</strong></p>
       <p class="muted" data-i18n="or">or</p>
-      <label class="button">
-        <span data-i18n="chooseFile">Choose file</span>
-        <input type="file" id="fileInput" accept=".csv,.tsv,.txt,text/csv" hidden>
-      </label>
+      <div class="dropzone-actions">
+        <label class="button">
+          <span data-i18n="chooseFile">Choose file</span>
+          <input type="file" id="fileInput" accept=".csv,.tsv,.txt,text/csv" hidden>
+        </label>
+        <button id="emptyFileBtn" type="button" class="secondary" data-i18n="startEmpty">Start empty file</button>
+      </div>
     </section>
 
     <section id="about" class="about">

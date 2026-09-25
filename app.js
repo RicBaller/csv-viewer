@@ -4,6 +4,7 @@ const els = {
   dropzone: $('dropzone'),
   about: $('about'),
   fileInput: $('fileInput'),
+  emptyFileBtn: $('emptyFileBtn'),
   importPanel: $('importPanel'),
   importName: $('importName'),
   hasHeader: $('hasHeader'),
@@ -44,7 +45,7 @@ const els = {
 let pending = null; // { name, text, rows, customNames }
 
 // Loaded data.
-let data = null; // { name, delimiter, headers: string[], rows: string[][], widths: px[] set by dragging }
+let data = null; // { name, delimiter, headers: string[], rows: string[][], widths: px[] set by dragging, isNew: started empty }
 
 // Active view of the loaded data: 'table' or 'record' (one row at a time).
 let view = 'table';
@@ -136,14 +137,34 @@ function importHeaders() {
 
 function confirmImport() {
   const hasHeader = els.hasHeader.checked;
-  data = {
+  openData({
     name: pending.name,
     delimiter: els.delimiter.value,
     headers: importHeaders(),
     rows: pending.rows.slice(hasHeader ? 1 : 0),
     widths: [],
-  };
+  });
   pending = null;
+}
+
+// Starts a new file with one column and one empty row, and opens that cell for editing.
+function startEmptyFile() {
+  openData({
+    name: `${t('untitled')}.csv`,
+    delimiter: ',',
+    headers: [t('column', { n: 1 })],
+    rows: [['']],
+    widths: [],
+    isNew: true,
+  });
+  const cell = view === 'record'
+    ? els.recordTable.querySelector('td[data-col="0"]')
+    : els.dataTable.querySelector('td.cell[data-row="0"][data-col="0"]');
+  startEdit(cell, '', (v) => { data.rows[0][0] = v; });
+}
+
+function openData(newData) {
+  data = newData;
   currentRow = 0;
   stopSelecting();
   render();
@@ -697,7 +718,7 @@ els.downloadBtn.addEventListener('click', () => {
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = data.name.replace(/\.[^.]*$/, '') + `-${t('editedSuffix')}.csv`;
+  a.download = data.isNew ? data.name : data.name.replace(/\.[^.]*$/, '') + `-${t('editedSuffix')}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -709,6 +730,7 @@ els.fileInput.addEventListener('change', () => {
   els.fileInput.value = '';
 });
 
+els.emptyFileBtn.addEventListener('click', startEmptyFile);
 els.hasHeader.addEventListener('change', refreshImport);
 els.delimiter.addEventListener('change', refreshImport);
 els.confirmImportBtn.addEventListener('click', confirmImport);
