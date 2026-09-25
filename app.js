@@ -162,10 +162,7 @@ function startEmptyFile() {
     hasHeader: true,
     isNew: true,
   });
-  const cell = view === 'record'
-    ? els.recordTable.querySelector('td[data-col="0"]')
-    : els.dataTable.querySelector('td.cell[data-row="0"][data-col="0"]');
-  startEdit(cell, '', (v) => { data.rows[0][0] = v; });
+  editAt(0, 0);
 }
 
 function openData(newData) {
@@ -420,7 +417,8 @@ function render() {
 
 // ---------- Editing ----------
 
-function startEdit(el, value, onSave) {
+// onMove(1 or -1) runs after Tab or Shift+Tab has saved the value.
+function startEdit(el, value, onSave, onMove) {
   const container = el.tagName === 'SPAN' ? el.closest('th') : el;
   if (container.classList.contains('editing')) return;
 
@@ -448,8 +446,39 @@ function startEdit(el, value, onSave) {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') finish(true);
     if (e.key === 'Escape') finish(false);
+    if (e.key === 'Tab' && onMove) {
+      e.preventDefault();
+      finish(true);
+      onMove(e.shiftKey ? -1 : 1);
+    }
   });
   input.addEventListener('blur', () => finish(true));
+}
+
+// Opens data cell (r, c), or column name c when r is -1, for editing in the active view.
+// Tab moves on to the next cell: along the row, then to the next row. In row view and
+// among column names it moves to the next column only.
+function editAt(r, c) {
+  const record = view === 'record';
+  const header = r < 0;
+  const table = record ? els.recordTable : els.dataTable;
+  const el = header
+    ? table.querySelector(record ? `th[data-col="${c}"]` : `.col-name[data-col="${c}"]`)
+    : table.querySelector(record ? `td[data-col="${c}"]` : `td.cell[data-row="${r}"][data-col="${c}"]`);
+  if (!el) return;
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
+  const n = data.headers.length;
+  const move = (dir) => {
+    if (header || record) {
+      if (c + dir >= 0 && c + dir < n) editAt(r, c + dir);
+      return;
+    }
+    const i = r * n + c + dir;
+    if (i >= 0 && i < data.rows.length * n) editAt(Math.floor(i / n), i % n);
+  };
+  if (header) startEdit(el, data.headers[c], (v) => { data.headers[c] = v; }, move);
+  else startEdit(el, data.rows[r][c], (v) => { data.rows[r][c] = v; }, move);
 }
 
 // Returns the border under the pointer: { col } for a column's end border,
@@ -567,16 +596,13 @@ els.dataTable.addEventListener('click', (e) => {
 
   const cell = e.target.closest('td.cell');
   if (cell) {
-    const r = Number(cell.dataset.row);
-    const c = Number(cell.dataset.col);
-    startEdit(cell, data.rows[r][c], (v) => { data.rows[r][c] = v; });
+    editAt(Number(cell.dataset.row), Number(cell.dataset.col));
     return;
   }
 
   const colName = e.target.closest('.col-name');
   if (colName && data.hasHeader) {
-    const c = Number(colName.dataset.col);
-    startEdit(colName, data.headers[c], (v) => { data.headers[c] = v; });
+    editAt(-1, Number(colName.dataset.col));
   }
 });
 
@@ -613,10 +639,9 @@ els.recordTable.addEventListener('click', (e) => {
   if (!cell || cell.classList.contains('editing')) return;
   const c = Number(cell.dataset.col);
   if (cell.tagName === 'TD') {
-    const r = currentRow;
-    startEdit(cell, data.rows[r][c], (v) => { data.rows[r][c] = v; });
-  } else {
-    if (data.hasHeader) startEdit(cell, data.headers[c], (v) => { data.headers[c] = v; });
+    editAt(currentRow, c);
+  } else if (data.hasHeader) {
+    editAt(-1, c);
   }
 });
 
@@ -627,12 +652,7 @@ function addRow(index, c = 0) {
   data.rows.splice(index, 0, data.headers.map(() => ''));
   if (view === 'record') currentRow = index;
   render();
-  const cell = view === 'record'
-    ? els.recordTable.querySelector(`td[data-col="${c}"]`)
-    : els.dataTable.querySelector(`td.cell[data-row="${index}"][data-col="${c}"]`);
-  if (!cell) return;
-  cell.scrollIntoView({ block: 'nearest' });
-  startEdit(cell, '', (v) => { data.rows[index][c] = v; });
+  editAt(index, c);
 }
 
 // Inserts an empty column at index. Opens the cell in row r for editing, or the column name when r is -1.
@@ -646,12 +666,7 @@ function addColumn(index, r = -1) {
     if (!data.rows.length) return;
     r = 0;
   }
-  const el = r < 0
-    ? els.dataTable.querySelector(`.col-name[data-col="${index}"]`)
-    : els.dataTable.querySelector(`td.cell[data-row="${r}"][data-col="${index}"]`);
-  el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  if (r < 0) startEdit(el, data.headers[index], (v) => { data.headers[index] = v; });
-  else startEdit(el, '', (v) => { data.rows[r][index] = v; });
+  editAt(r, index);
 }
 
 // Menu under a row's or column's + button. Items are [translation key, action] pairs.
