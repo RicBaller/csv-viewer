@@ -37,6 +37,7 @@ const els = {
   deleteSelectedBtn: $('deleteSelectedBtn'),
   addRowBtn: $('addRowBtn'),
   addRecordBtn: $('addRecordBtn'),
+  addColumnBtn: $('addColumnBtn'),
 };
 
 // File waiting in the import panel.
@@ -61,7 +62,7 @@ const MIN_ROW_HEIGHT = 21; // one line of text
 // Columns start as wide as their title, within these bounds, until dragged.
 const MIN_COL_WIDTH = 80;
 const MAX_COL_WIDTH = 320;
-const HEADER_CHROME = 56; // cell padding, border, gap and delete button around the title
+const HEADER_CHROME = 80; // cell padding, border, gaps, insert and delete buttons around the title
 let justResized = false; // swallows the click that ends a resize drag
 const measureCtx = document.createElement('canvas').getContext('2d');
 
@@ -167,14 +168,22 @@ function renderSimpleTable(table, headers, rows) {
   table.replaceChildren(thead, tbody);
 }
 
-function deleteButton(title, action, index) {
+function iconButton(className, text, title, action, index) {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'delete';
+  btn.className = className;
   btn.title = title;
-  btn.textContent = '×';
+  btn.textContent = text;
   btn.dataset.action = action;
   btn.dataset.index = index;
+  return btn;
+}
+
+const deleteButton = (title, action, index) => iconButton('delete', '×', title, action, index);
+
+function insertButton(title, action, index) {
+  const btn = iconButton('insert', '+', title, action, index);
+  btn.setAttribute('aria-haspopup', 'menu');
   return btn;
 }
 
@@ -199,10 +208,15 @@ function renderData() {
     name.textContent = h;
     name.title = h;
     name.dataset.col = c;
-    inner.append(name, deleteButton(t('deleteColumn'), 'delete-col', c));
+    inner.append(name, insertButton(t('insertColumn'), 'insert-col-menu', c), deleteButton(t('deleteColumn'), 'delete-col', c));
     th.appendChild(inner);
     headRow.appendChild(th);
   });
+  // Placeholder column at the end: clicking it adds a real column.
+  const ghostHead = document.createElement('th');
+  ghostHead.className = 'ghost-col';
+  ghostHead.textContent = `+ ${t('newColumn')}`;
+  headRow.appendChild(ghostHead);
 
   const tbody = document.createElement('tbody');
   data.rows.forEach((row, r) => {
@@ -222,15 +236,7 @@ function renderData() {
     open.textContent = String(r + 1);
     open.dataset.action = 'open-row';
     open.dataset.index = r;
-    const insert = document.createElement('button');
-    insert.type = 'button';
-    insert.className = 'insert';
-    insert.title = t('insertRow');
-    insert.textContent = '+';
-    insert.dataset.action = 'insert-menu';
-    insert.dataset.index = r;
-    insert.setAttribute('aria-haspopup', 'menu');
-    num.append(deleteButton(t('deleteRow'), 'delete-row', r), insert, open);
+    num.append(deleteButton(t('deleteRow'), 'delete-row', r), insertButton(t('insertRow'), 'insert-row-menu', r), open);
     const height = rowHeights.get(row);
     if (height) tr.style.setProperty('--cell-max', `${height}px`);
     row.forEach((value, c) => {
@@ -243,6 +249,9 @@ function renderData() {
       content.textContent = value;
       td.appendChild(content);
     });
+    const ghostCell = tr.insertCell();
+    ghostCell.className = 'ghost-col';
+    ghostCell.dataset.row = r;
   });
 
   // Placeholder row at the bottom: clicking it adds a real row.
@@ -258,6 +267,7 @@ function renderData() {
       td.dataset.col = c;
       if (c === 0) td.textContent = t('newRow');
     });
+    ghost.insertCell();
   }
 
   els.dataTable.replaceChildren(thead, tbody, tfoot);
@@ -267,7 +277,7 @@ function renderData() {
 
 // Gives each column its dragged width, or one that fits its title.
 function sizeColumns(headRow) {
-  const cells = [...headRow.cells].slice(1);
+  const cells = [...headRow.cells].slice(1, data.headers.length + 1);
   if (!cells.length) return;
   const style = getComputedStyle(cells[0]);
   measureCtx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
@@ -396,7 +406,7 @@ function resizeAt(e) {
   const toEnd = rtl ? e.clientX - rect.left : rect.right - e.clientX;
   const toStart = rtl ? rect.right - e.clientX : e.clientX - rect.left;
   const colCell = toEnd <= RESIZE_EDGE ? cell : toStart <= RESIZE_EDGE ? cell.previousElementSibling : null;
-  if (colCell && colCell.cellIndex > 0) return { col: colCell.cellIndex - 1 };
+  if (colCell && colCell.cellIndex > 0 && colCell.cellIndex <= data.headers.length) return { col: colCell.cellIndex - 1 };
 
   if (cell.tagName !== 'TD' || !cell.closest('tbody')) return null;
   const tr = cell.parentElement;
@@ -467,9 +477,13 @@ els.dataTable.addEventListener('click', (e) => {
       if (!confirm(t('confirmDeleteRow', { n: i + 1 }))) return;
       selected.delete(data.rows[i]);
       data.rows.splice(i, 1);
-    } else if (btn.dataset.action === 'insert-menu') {
-      if (insertButton === btn) closeInsertMenu();
-      else openInsertMenu(btn);
+    } else if (btn.dataset.action === 'insert-row-menu') {
+      toggleInsertMenu(btn, [['insertAbove', () => addRow(i)], ['insertBelow', () => addRow(i + 1)]]);
+      return;
+    } else if (btn.dataset.action === 'insert-col-menu') {
+      // Left and right follow the screen, so they swap places in the column order for RTL.
+      const rtl = document.documentElement.dir === 'rtl';
+      toggleInsertMenu(btn, [['insertLeft', () => addColumn(rtl ? i + 1 : i)], ['insertRight', () => addColumn(rtl ? i : i + 1)]]);
       return;
     } else if (btn.dataset.action === 'open-row') {
       currentRow = i;
@@ -481,6 +495,12 @@ els.dataTable.addEventListener('click', (e) => {
       data.rows.forEach((row) => row.splice(i, 1));
     }
     render();
+    return;
+  }
+
+  const ghostCol = e.target.closest('.ghost-col');
+  if (ghostCol) {
+    addColumn(data.headers.length, ghostCol.dataset.row === undefined ? -1 : Number(ghostCol.dataset.row));
     return;
   }
 
@@ -559,25 +579,43 @@ function addRow(index, c = 0) {
   startEdit(cell, '', (v) => { data.rows[index][c] = v; });
 }
 
-// Menu under a row's + button to insert a row above or below it.
+// Inserts an empty column at index. Opens the cell in row r for editing, or the column name when r is -1.
+function addColumn(index, r = -1) {
+  data.headers.splice(index, 0, t('column', { n: index + 1 }));
+  data.widths.splice(index, 0, undefined);
+  data.rows.forEach((row) => row.splice(index, 0, ''));
+  render();
+  const el = r < 0
+    ? els.dataTable.querySelector(`.col-name[data-col="${index}"]`)
+    : els.dataTable.querySelector(`td.cell[data-row="${r}"][data-col="${index}"]`);
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  if (r < 0) startEdit(el, data.headers[index], (v) => { data.headers[index] = v; });
+  else startEdit(el, '', (v) => { data.rows[r][index] = v; });
+}
+
+// Menu under a row's or column's + button. Items are [translation key, action] pairs.
 const insertMenu = document.createElement('div');
 insertMenu.className = 'insert-menu';
 insertMenu.setAttribute('role', 'menu');
 insertMenu.hidden = true;
 document.body.appendChild(insertMenu);
-let insertButton = null; // + button the open menu belongs to
+let menuButton = null; // + button the open menu belongs to
+let menuActions = [];
 
-function openInsertMenu(btn) {
+function toggleInsertMenu(btn, items) {
+  const wasOpen = menuButton === btn;
   closeInsertMenu();
-  insertButton = btn;
+  if (wasOpen) return;
+  menuButton = btn;
+  menuActions = items.map(([, action]) => action);
   btn.setAttribute('aria-expanded', 'true');
-  insertMenu.replaceChildren(...[['insertAbove', 0], ['insertBelow', 1]].map(([key, offset]) => {
+  insertMenu.replaceChildren(...items.map(([key], i) => {
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'secondary';
     item.setAttribute('role', 'menuitem');
     item.textContent = t(key);
-    item.dataset.offset = offset;
+    item.dataset.index = i;
     return item;
   }));
   insertMenu.hidden = false;
@@ -589,24 +627,23 @@ function openInsertMenu(btn) {
 }
 
 function closeInsertMenu() {
-  if (!insertButton) return;
-  insertButton.removeAttribute('aria-expanded');
-  insertButton = null;
+  if (!menuButton) return;
+  menuButton.removeAttribute('aria-expanded');
+  menuButton = null;
   insertMenu.hidden = true;
 }
 
 insertMenu.addEventListener('click', (e) => {
   const item = e.target.closest('button');
-  if (!item) return;
-  addRow(Number(insertButton.dataset.index) + Number(item.dataset.offset));
+  if (item) menuActions[Number(item.dataset.index)]();
 });
 
 document.addEventListener('pointerdown', (e) => {
-  if (insertButton && !insertMenu.contains(e.target) && e.target !== insertButton) closeInsertMenu();
+  if (menuButton && !insertMenu.contains(e.target) && e.target !== menuButton) closeInsertMenu();
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && insertButton) {
-    insertButton.focus();
+  if (e.key === 'Escape' && menuButton) {
+    menuButton.focus();
     closeInsertMenu();
   }
 });
@@ -614,6 +651,7 @@ window.addEventListener('scroll', closeInsertMenu, true);
 
 els.addRowBtn.addEventListener('click', () => addRow(data.rows.length));
 els.addRecordBtn.addEventListener('click', () => addRow(data.rows.length));
+els.addColumnBtn.addEventListener('click', () => addColumn(data.headers.length));
 
 function goToRow(index) {
   currentRow = index;

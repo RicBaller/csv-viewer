@@ -200,7 +200,7 @@ tbody tr.selected, tbody tr.selected td.rownum { background: var(--hover); }
 #dataTable { min-width: 0; }
 #dataTable th, #dataTable td { max-width: none; }
 #dataTable .col-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#dataTable .th-inner .delete { flex-shrink: 0; }
+#dataTable .th-inner .delete, #dataTable .th-inner .insert { flex-shrink: 0; }
 #dataTable td.editing input, #dataTable th.editing input { min-width: 0; }
 
 #dataTable.row-resize, #dataTable.row-resize *, body.row-resize, body.row-resize * { cursor: row-resize; }
@@ -220,6 +220,7 @@ td.rownum, th.rownum {
 thead th.rownum { z-index: 2; }
 
 .th-inner { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.th-inner .insert { margin-inline-start: auto; }
 
 .delete {
   padding: 0 6px;
@@ -245,7 +246,8 @@ thead th.rownum { z-index: 2; }
 
 /* With a mouse, the + only shows on the hovered row; touch screens always show it. */
 @media (hover: hover) {
-  #dataTable tbody tr:not(:hover) .insert:not(:focus-visible):not([aria-expanded]) { visibility: hidden; }
+  #dataTable tbody tr:not(:hover) .insert:not(:focus-visible):not([aria-expanded]),
+  #dataTable thead th:not(:hover) .insert:not(:focus-visible):not([aria-expanded]) { visibility: hidden; }
 }
 
 .insert-menu {
@@ -263,7 +265,9 @@ thead th.rownum { z-index: 2; }
 .insert-menu button { border: none; border-radius: 4px; padding: 6px 10px; text-align: start; white-space: nowrap; }
 .insert-menu button:hover, .insert-menu button:focus-visible { background: var(--hover); }
 
-#dataTable tfoot td { color: var(--muted); cursor: pointer; }
+#dataTable tfoot td, #dataTable .ghost-col { color: var(--muted); cursor: pointer; }
+#dataTable thead th.ghost-col { font-weight: normal; white-space: nowrap; }
+#dataTable .ghost-col:hover { background: var(--hover); color: var(--accent); }
 #dataTable tr.ghost:hover td { background: var(--hover); color: var(--accent); }
 
 td.editing, th.editing { padding: 2px; }

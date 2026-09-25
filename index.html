@@ -52,8 +52,7 @@
         "featureList": [
           "Open CSV and TSV files without uploading them",
           "Edit cells and rename columns",
-          "Add, insert and delete rows",
-          "Delete columns",
+          "Add, insert and delete rows and columns",
           "Row view: one row at a time",
           "Comma, semicolon, tab and pipe delimiters",
           "Download the edited CSV",
@@ -134,7 +133,7 @@
       <p data-i18n="aboutIntro">CSV Viewer opens CSV and TSV files directly in your browser. View your data as a table, edit cells, rename or delete columns and rows, and download the result as a new CSV file. Free, no account, nothing to install.</p>
       <ul class="features">
         <li><strong data-i18n="featPrivateTitle">Private</strong> <span data-i18n="featPrivate">Your file never leaves your device. Everything runs locally in your browser.</span></li>
-        <li><strong data-i18n="featEditTitle">Edit</strong> <span data-i18n="featEdit">Click a cell or column name to change it. Delete rows and columns, or select several rows and delete them at once. Add rows at the bottom or anywhere in between.</span></li>
+        <li><strong data-i18n="featEditTitle">Edit</strong> <span data-i18n="featEdit">Click a cell or column name to change it. Delete rows and columns, or select several rows and delete them at once. Add rows and columns at the end or anywhere in between.</span></li>
         <li><strong data-i18n="featRowTitle">Row view</strong> <span data-i18n="featRow">See one row at a time as column name and value. Handy for wide files.</span></li>
         <li><strong data-i18n="featDelimiterTitle">Any delimiter</strong> <span data-i18n="featDelimiter">Comma, semicolon, tab or pipe, with or without a header row.</span></li>
       </ul>
@@ -185,9 +184,10 @@
     </section>
 
     <section id="viewer" hidden>
-      <p class="muted hint" data-i18n="hint">Click a cell to edit it. Click a column name to rename it. Drag the lines between rows or columns to resize them. Click + next to a row number to insert a row above or below it.</p>
+      <p class="muted hint" data-i18n="hint">Click a cell to edit it. Click a column name to rename it. Drag the lines between rows or columns to resize them. Click + next to a row number or column name to insert a row or column there.</p>
       <div id="tableTools" class="table-tools">
         <button id="addRowBtn" type="button" class="secondary" data-i18n="addRow">+ Add row</button>
+        <button id="addColumnBtn" type="button" class="secondary" data-i18n="addColumn">+ Add column</button>
         <button id="selectToggleBtn" type="button" class="secondary"></button>
         <span id="selectedCount" class="muted" hidden></span>
         <button id="deleteSelectedBtn" type="button" class="secondary danger" data-i18n="deleteSelected" hidden>Delete selected</button>
