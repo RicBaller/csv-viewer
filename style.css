@@ -55,7 +55,8 @@ body {
 
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-.lang { display: flex; align-items: center; gap: 6px; }
+.lang, .header-toggle { display: flex; align-items: center; gap: 6px; }
+.header-toggle:has(input:disabled) { opacity: .4; }
 
 main { flex: 1; padding: 24px; }
 
@@ -190,6 +191,9 @@ tbody tr:nth-child(even) { background: var(--row-alt); }
 tbody tr.selected, tbody tr.selected td.rownum { background: var(--hover); }
 
 #dataTable td.cell, #dataTable th .col-name { cursor: text; }
+#dataTable.no-header th .col-name { cursor: default; color: var(--muted); font-weight: normal; }
+#recordTable.no-header th { cursor: default; }
+#recordTable.no-header th:hover { background: none; }
 #dataTable td.cell:hover { background: var(--hover); }
 
 /* Long values are clipped to four lines until the row is dragged taller. */

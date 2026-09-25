@@ -39,13 +39,16 @@ const els = {
   addRowBtn: $('addRowBtn'),
   addRecordBtn: $('addRecordBtn'),
   addColumnBtn: $('addColumnBtn'),
+  headerToggle: $('headerToggle'),
 };
 
 // File waiting in the import panel.
 let pending = null; // { name, text, rows, customNames }
 
 // Loaded data.
-let data = null; // { name, delimiter, headers: string[], rows: string[][], widths: px[] set by dragging, isNew: started empty }
+// { name, delimiter, headers: string[], rows: string[][], widths: px[] set by dragging,
+//   hasHeader: headers are a row of the file (else generated names), isNew: started empty }
+let data = null;
 
 // Active view of the loaded data: 'table' or 'record' (one row at a time).
 let view = 'table';
@@ -143,6 +146,7 @@ function confirmImport() {
     headers: importHeaders(),
     rows: pending.rows.slice(hasHeader ? 1 : 0),
     widths: [],
+    hasHeader,
   });
   pending = null;
 }
@@ -155,6 +159,7 @@ function startEmptyFile() {
     headers: [t('column', { n: 1 })],
     rows: [['']],
     widths: [],
+    hasHeader: true,
     isNew: true,
   });
   const cell = view === 'record'
@@ -226,8 +231,11 @@ function renderData() {
     inner.className = 'th-inner';
     const name = document.createElement('span');
     name.className = 'col-name';
-    name.textContent = h;
-    name.title = h;
+    // Without a header row the bar keeps only the column controls, no names.
+    if (data.hasHeader) {
+      name.textContent = h;
+      name.title = h;
+    }
     name.dataset.col = c;
     inner.append(name, insertButton(t('insertColumn'), 'insert-col-menu', c), deleteButton(t('deleteColumn'), 'delete-col', c));
     th.appendChild(inner);
@@ -303,7 +311,7 @@ function sizeColumns(headRow) {
   const style = getComputedStyle(cells[0]);
   measureCtx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
   cells.forEach((th, c) => {
-    const fit = Math.ceil(measureCtx.measureText(data.headers[c]).width) + HEADER_CHROME;
+    const fit = Math.ceil(measureCtx.measureText(data.hasHeader ? data.headers[c] : '').width) + HEADER_CHROME;
     const width = data.widths[c] ?? Math.min(MAX_COL_WIDTH, Math.max(MIN_COL_WIDTH, fit));
     th.style.width = `${width}px`;
   });
@@ -359,7 +367,7 @@ function renderRecord() {
       const num = document.createElement('span');
       num.className = 'colnum';
       num.textContent = c + 1;
-      th.append(num, document.createTextNode(h));
+      th.append(num, document.createTextNode(data.hasHeader ? h : ''));
       tr.appendChild(th);
       const td = tr.insertCell();
       td.dataset.col = c;
@@ -369,13 +377,40 @@ function renderRecord() {
   els.recordTable.replaceChildren(tbody);
 }
 
+// Without a header row, columns get position names (not shown, but used in messages like the delete confirmation).
+function genericHeaders() {
+  return data.headers.map((_, i) => t('column', { n: i + 1 }));
+}
+
+// Turns the header row into the first data row, or the first data row into the header row.
+function setHasHeader(on) {
+  if (on === data.hasHeader) return;
+  if (on) {
+    if (!data.rows.length) return;
+    const first = data.rows.shift();
+    selected.delete(first);
+    data.headers = first;
+    currentRow = Math.max(currentRow - 1, 0);
+  } else {
+    data.rows.unshift(data.headers);
+    currentRow++;
+  }
+  data.hasHeader = on;
+  render();
+}
+
 function render() {
   closeInsertMenu();
+  if (!data.hasHeader) data.headers = genericHeaders();
+  els.headerToggle.checked = data.hasHeader;
+  els.headerToggle.disabled = !data.hasHeader && !data.rows.length;
   const isRecord = view === 'record';
   els.tableView.hidden = isRecord;
   els.recordView.hidden = !isRecord;
   els.tableTools.hidden = isRecord;
   els.viewer.classList.toggle('record-mode', isRecord);
+  els.dataTable.classList.toggle('no-header', !data.hasHeader);
+  els.recordTable.classList.toggle('no-header', !data.hasHeader);
   els.tableViewBtn.classList.toggle('active', !isRecord);
   els.recordViewBtn.classList.toggle('active', isRecord);
   if (isRecord) renderRecord();
@@ -539,7 +574,7 @@ els.dataTable.addEventListener('click', (e) => {
   }
 
   const colName = e.target.closest('.col-name');
-  if (colName) {
+  if (colName && data.hasHeader) {
     const c = Number(colName.dataset.col);
     startEdit(colName, data.headers[c], (v) => { data.headers[c] = v; });
   }
@@ -581,7 +616,7 @@ els.recordTable.addEventListener('click', (e) => {
     const r = currentRow;
     startEdit(cell, data.rows[r][c], (v) => { data.rows[r][c] = v; });
   } else {
-    startEdit(cell, data.headers[c], (v) => { data.headers[c] = v; });
+    if (data.hasHeader) startEdit(cell, data.headers[c], (v) => { data.headers[c] = v; });
   }
 });
 
@@ -606,6 +641,11 @@ function addColumn(index, r = -1) {
   data.widths.splice(index, 0, undefined);
   data.rows.forEach((row) => row.splice(index, 0, ''));
   render();
+  // Without a header row there is no name to edit, so edit the first cell instead.
+  if (r < 0 && !data.hasHeader) {
+    if (!data.rows.length) return;
+    r = 0;
+  }
   const el = r < 0
     ? els.dataTable.querySelector(`.col-name[data-col="${index}"]`)
     : els.dataTable.querySelector(`td.cell[data-row="${r}"][data-col="${index}"]`);
@@ -708,13 +748,14 @@ function setView(v) {
   render();
 }
 
+els.headerToggle.addEventListener('change', () => setHasHeader(els.headerToggle.checked));
 els.tableViewBtn.addEventListener('click', () => setView('table'));
 els.recordViewBtn.addEventListener('click', () => setView('record'));
 
 // ---------- Download ----------
 
 els.downloadBtn.addEventListener('click', () => {
-  const csv = toCSV(data.headers, data.rows, data.delimiter);
+  const csv = data.hasHeader ? toCSV(data.headers, data.rows, data.delimiter) : toCSV(data.rows[0] || [], data.rows.slice(1), data.delimiter);
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
