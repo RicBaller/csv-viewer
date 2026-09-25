@@ -35,6 +35,8 @@ const els = {
   selectToggleBtn: $('selectToggleBtn'),
   selectedCount: $('selectedCount'),
   deleteSelectedBtn: $('deleteSelectedBtn'),
+  addRowBtn: $('addRowBtn'),
+  addRecordBtn: $('addRecordBtn'),
 };
 
 // File waiting in the import panel.
@@ -220,7 +222,15 @@ function renderData() {
     open.textContent = String(r + 1);
     open.dataset.action = 'open-row';
     open.dataset.index = r;
-    num.append(deleteButton(t('deleteRow'), 'delete-row', r), open);
+    const insert = document.createElement('button');
+    insert.type = 'button';
+    insert.className = 'insert';
+    insert.title = t('insertRow');
+    insert.textContent = '+';
+    insert.dataset.action = 'insert-menu';
+    insert.dataset.index = r;
+    insert.setAttribute('aria-haspopup', 'menu');
+    num.append(deleteButton(t('deleteRow'), 'delete-row', r), insert, open);
     const height = rowHeights.get(row);
     if (height) tr.style.setProperty('--cell-max', `${height}px`);
     row.forEach((value, c) => {
@@ -235,7 +245,22 @@ function renderData() {
     });
   });
 
-  els.dataTable.replaceChildren(thead, tbody);
+  // Placeholder row at the bottom: clicking it adds a real row.
+  const tfoot = document.createElement('tfoot');
+  if (data.headers.length) {
+    const ghost = tfoot.insertRow();
+    ghost.className = 'ghost';
+    const plus = ghost.insertCell();
+    plus.className = 'rownum';
+    plus.textContent = '+';
+    data.headers.forEach((_, c) => {
+      const td = ghost.insertCell();
+      td.dataset.col = c;
+      if (c === 0) td.textContent = t('newRow');
+    });
+  }
+
+  els.dataTable.replaceChildren(thead, tbody, tfoot);
   sizeColumns(headRow);
   updateSelectionUI();
 }
@@ -314,6 +339,7 @@ function renderRecord() {
 }
 
 function render() {
+  closeInsertMenu();
   const isRecord = view === 'record';
   els.tableView.hidden = isRecord;
   els.recordView.hidden = !isRecord;
@@ -372,7 +398,7 @@ function resizeAt(e) {
   const colCell = toEnd <= RESIZE_EDGE ? cell : toStart <= RESIZE_EDGE ? cell.previousElementSibling : null;
   if (colCell && colCell.cellIndex > 0) return { col: colCell.cellIndex - 1 };
 
-  if (cell.tagName !== 'TD') return null;
+  if (cell.tagName !== 'TD' || !cell.closest('tbody')) return null;
   const tr = cell.parentElement;
   if (rect.bottom - e.clientY <= RESIZE_EDGE) return { tr };
   if (e.clientY - rect.top <= RESIZE_EDGE && tr.previousElementSibling) return { tr: tr.previousElementSibling };
@@ -441,6 +467,10 @@ els.dataTable.addEventListener('click', (e) => {
       if (!confirm(t('confirmDeleteRow', { n: i + 1 }))) return;
       selected.delete(data.rows[i]);
       data.rows.splice(i, 1);
+    } else if (btn.dataset.action === 'insert-menu') {
+      if (insertButton === btn) closeInsertMenu();
+      else openInsertMenu(btn);
+      return;
     } else if (btn.dataset.action === 'open-row') {
       currentRow = i;
       view = 'record';
@@ -451,6 +481,11 @@ els.dataTable.addEventListener('click', (e) => {
       data.rows.forEach((row) => row.splice(i, 1));
     }
     render();
+    return;
+  }
+
+  if (e.target.closest('tr.ghost')) {
+    addRow(data.rows.length, Number(e.target.closest('td').dataset.col ?? 0));
     return;
   }
 
@@ -508,6 +543,77 @@ els.recordTable.addEventListener('click', (e) => {
     startEdit(cell, data.headers[c], (v) => { data.headers[c] = v; });
   }
 });
+
+// ---------- Adding rows ----------
+
+// Inserts an empty row at index, then opens its cell in column c for editing.
+function addRow(index, c = 0) {
+  data.rows.splice(index, 0, data.headers.map(() => ''));
+  if (view === 'record') currentRow = index;
+  render();
+  const cell = view === 'record'
+    ? els.recordTable.querySelector(`td[data-col="${c}"]`)
+    : els.dataTable.querySelector(`td.cell[data-row="${index}"][data-col="${c}"]`);
+  if (!cell) return;
+  cell.scrollIntoView({ block: 'nearest' });
+  startEdit(cell, '', (v) => { data.rows[index][c] = v; });
+}
+
+// Menu under a row's + button to insert a row above or below it.
+const insertMenu = document.createElement('div');
+insertMenu.className = 'insert-menu';
+insertMenu.setAttribute('role', 'menu');
+insertMenu.hidden = true;
+document.body.appendChild(insertMenu);
+let insertButton = null; // + button the open menu belongs to
+
+function openInsertMenu(btn) {
+  closeInsertMenu();
+  insertButton = btn;
+  btn.setAttribute('aria-expanded', 'true');
+  insertMenu.replaceChildren(...[['insertAbove', 0], ['insertBelow', 1]].map(([key, offset]) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'secondary';
+    item.setAttribute('role', 'menuitem');
+    item.textContent = t(key);
+    item.dataset.offset = offset;
+    return item;
+  }));
+  insertMenu.hidden = false;
+  const rect = btn.getBoundingClientRect();
+  const rtl = document.documentElement.dir === 'rtl';
+  insertMenu.style.top = `${rect.bottom + 4}px`;
+  insertMenu.style.left = `${rtl ? rect.right - insertMenu.offsetWidth : rect.left}px`;
+  insertMenu.firstChild.focus();
+}
+
+function closeInsertMenu() {
+  if (!insertButton) return;
+  insertButton.removeAttribute('aria-expanded');
+  insertButton = null;
+  insertMenu.hidden = true;
+}
+
+insertMenu.addEventListener('click', (e) => {
+  const item = e.target.closest('button');
+  if (!item) return;
+  addRow(Number(insertButton.dataset.index) + Number(item.dataset.offset));
+});
+
+document.addEventListener('pointerdown', (e) => {
+  if (insertButton && !insertMenu.contains(e.target) && e.target !== insertButton) closeInsertMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && insertButton) {
+    insertButton.focus();
+    closeInsertMenu();
+  }
+});
+window.addEventListener('scroll', closeInsertMenu, true);
+
+els.addRowBtn.addEventListener('click', () => addRow(data.rows.length));
+els.addRecordBtn.addEventListener('click', () => addRow(data.rows.length));
 
 function goToRow(index) {
   currentRow = index;
