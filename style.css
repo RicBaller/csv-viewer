@@ -282,7 +282,10 @@ td.editing input, th.editing input { width: 100%; min-width: 120px; }
 .table-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .table-tools button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
 
-td.rownum input[type="checkbox"] { margin-inline-end: 4px; vertical-align: middle; }
+/* Checkbox at the start, the rest at the end; numbers share one width so every row lines up. */
+.rownum-inner { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.rownum-inner input[type="checkbox"] { margin: 0; margin-inline-end: auto; }
+.rownum-inner .rowlink, .rownum-label { min-width: var(--num-width, 1ch); text-align: end; font-variant-numeric: tabular-nums; }
 
 .toggle { display: inline-flex; }
 .toggle button { border-radius: 0; }

@@ -215,12 +215,16 @@ function renderData() {
   const headRow = thead.insertRow();
   const corner = document.createElement('th');
   corner.className = 'rownum';
-  if (selecting) {
-    corner.appendChild(checkbox('select-all', -1, t('selectAll')));
-  } else {
-    corner.textContent = '#';
-  }
+  const cornerInner = rownumInner();
+  if (selecting) cornerInner.appendChild(checkbox('select-all', -1, t('selectAll')));
+  const hash = document.createElement('span');
+  hash.className = 'rownum-label';
+  hash.textContent = '#';
+  cornerInner.appendChild(hash);
+  corner.appendChild(cornerInner);
   headRow.appendChild(corner);
+  // Row numbers all get the width of the longest one, so the controls beside them line up.
+  els.dataTable.style.setProperty('--num-width', `${String(data.rows.length).length}ch`);
 
   data.headers.forEach((h, c) => {
     const th = document.createElement('th');
@@ -250,10 +254,11 @@ function renderData() {
     tr.classList.toggle('selected', selected.has(row));
     const num = tr.insertCell();
     num.className = 'rownum';
+    const numInner = rownumInner();
     if (selecting) {
       const box = checkbox('select-row', r, t('selectRow', { n: r + 1 }));
       box.checked = selected.has(row);
-      num.appendChild(box);
+      numInner.appendChild(box);
     }
     const open = document.createElement('button');
     open.type = 'button';
@@ -262,7 +267,8 @@ function renderData() {
     open.textContent = String(r + 1);
     open.dataset.action = 'open-row';
     open.dataset.index = r;
-    num.append(deleteButton(t('deleteRow'), 'delete-row', r), insertButton(t('insertRow'), 'insert-row-menu', r), open);
+    numInner.append(deleteButton(t('deleteRow'), 'delete-row', r), insertButton(t('insertRow'), 'insert-row-menu', r), open);
+    num.appendChild(numInner);
     const height = rowHeights.get(row);
     if (height) tr.style.setProperty('--cell-max', `${height}px`);
     row.forEach((value, c) => {
@@ -312,6 +318,13 @@ function sizeColumns(headRow) {
     const width = data.widths[c] ?? Math.min(MAX_COL_WIDTH, Math.max(MIN_COL_WIDTH, fit));
     th.style.width = `${width}px`;
   });
+}
+
+// Row number column content: checkbox at the start, buttons and number at the end.
+function rownumInner() {
+  const div = document.createElement('div');
+  div.className = 'rownum-inner';
+  return div;
 }
 
 function checkbox(action, index, label) {
