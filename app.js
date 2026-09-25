@@ -417,7 +417,11 @@ function render() {
 
 // ---------- Editing ----------
 
-// onMove(1 or -1) runs after Tab or Shift+Tab has saved the value.
+// onMove('next', 'prev', 'up', 'down', 'before' or 'after') is asked on Tab, Shift+Tab and the
+// arrow keys. Left and right only count once the caret is at that end of the text, so they
+// still move through it; they become 'before' or 'after' in reading order.
+// onMove returns the step to take once the value is saved, or null at the edge of the table:
+// then Tab saves and stops, and an arrow does nothing.
 function startEdit(el, value, onSave, onMove) {
   const container = el.tagName === 'SPAN' ? el.closest('th') : el;
   if (container.classList.contains('editing')) return;
@@ -446,18 +450,28 @@ function startEdit(el, value, onSave, onMove) {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') finish(true);
     if (e.key === 'Escape') finish(false);
-    if (e.key === 'Tab' && onMove) {
-      e.preventDefault();
-      finish(true);
-      onMove(e.shiftKey ? -1 : 1);
+    let to = { Tab: e.shiftKey ? 'prev' : 'next', ArrowUp: 'up', ArrowDown: 'down' }[e.key];
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const forward = (e.key === 'ArrowRight') !== (document.documentElement.dir === 'rtl');
+      const { selectionStart: start, selectionEnd: end } = input;
+      if (start !== end || (forward ? end < input.value.length : start > 0)) return;
+      to = forward ? 'after' : 'before';
     }
+    if (!to || !onMove) return;
+    const step = onMove(to);
+    if (!step && to !== 'next' && to !== 'prev') return;
+    e.preventDefault();
+    finish(true);
+    step?.();
   });
   input.addEventListener('blur', () => finish(true));
 }
 
 // Opens data cell (r, c), or column name c when r is -1, for editing in the active view.
-// Tab moves on to the next cell: along the row, then to the next row. In row view and
-// among column names it moves to the next column only.
+// Tab moves on to the next cell: along the row, then to the next row. Up and down move within
+// the column, with the column name above the first row; left and right stay in the row.
+// In row view, where columns are listed top to bottom, Tab, up and down move to the next or
+// previous column, and left and right go to the same column of the previous or next row.
 function editAt(r, c) {
   const record = view === 'record';
   const header = r < 0;
@@ -469,13 +483,27 @@ function editAt(r, c) {
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 
   const n = data.headers.length;
-  const move = (dir) => {
+  const move = (to) => {
+    const dir = to === 'next' || to === 'down' || to === 'after' ? 1 : -1;
+    if (to === 'before' || to === 'after') {
+      if (!record) return c + dir >= 0 && c + dir < n ? () => editAt(r, c + dir) : null;
+      const row = r + dir;
+      if (header || row < 0 || row >= data.rows.length) return null;
+      return () => {
+        currentRow = row;
+        renderRecord();
+        editAt(row, c);
+      };
+    }
+    if (!record && (to === 'up' || to === 'down')) {
+      const row = r + dir;
+      return row >= (data.hasHeader ? -1 : 0) && row < data.rows.length ? () => editAt(row, c) : null;
+    }
     if (header || record) {
-      if (c + dir >= 0 && c + dir < n) editAt(r, c + dir);
-      return;
+      return c + dir >= 0 && c + dir < n ? () => editAt(r, c + dir) : null;
     }
     const i = r * n + c + dir;
-    if (i >= 0 && i < data.rows.length * n) editAt(Math.floor(i / n), i % n);
+    return i >= 0 && i < data.rows.length * n ? () => editAt(Math.floor(i / n), i % n) : null;
   };
   if (header) startEdit(el, data.headers[c], (v) => { data.headers[c] = v; }, move);
   else startEdit(el, data.rows[r][c], (v) => { data.rows[r][c] = v; }, move);
