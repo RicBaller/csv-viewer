@@ -3,6 +3,20 @@
 
 const CHANGELOG = [
   {
+    version: '1.7.0',
+    date: '2026-09-26',
+    changes: {
+      en: [
+        'Download your data as Excel, plain text or Markdown with the arrow next to Download CSV.',
+        'Copy the data as plain text or as a Markdown table to paste it anywhere.',
+      ],
+      nl: [
+        'Download je gegevens als Excel, platte tekst of Markdown met het pijltje naast Download CSV.',
+        'Kopieer de gegevens als platte tekst of als Markdown-tabel om ze ergens te plakken.',
+      ],
+    },
+  },
+  {
     version: '1.6.0',
     date: '2026-09-25',
     changes: {

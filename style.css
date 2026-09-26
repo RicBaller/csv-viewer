@@ -269,6 +269,24 @@ thead th.rownum { z-index: 2; }
 .insert-menu button { border: none; border-radius: 4px; padding: 6px 10px; text-align: start; white-space: nowrap; }
 .insert-menu button:hover, .insert-menu button:focus-visible { background: var(--hover); }
 
+.menu-group { display: flex; flex-direction: column; }
+.menu-group + *, * + .menu-group { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--border); }
+.menu-group-label { padding: 4px 10px 2px; color: var(--muted); font-size: 12px; }
+.menu-group button { padding-inline-start: 18px; }
+
+.toast {
+  position: fixed;
+  z-index: 20;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
+}
+
 #dataTable tfoot td, #dataTable .ghost-col { color: var(--muted); cursor: pointer; }
 #dataTable thead th.ghost-col { font-weight: normal; white-space: nowrap; }
 #dataTable .ghost-col:hover { background: var(--hover); color: var(--accent); }
@@ -286,6 +304,16 @@ td.editing input, th.editing input { width: 100%; min-width: 120px; }
 .rownum-inner { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 .rownum-inner input[type="checkbox"] { margin: 0; margin-inline-end: auto; }
 .rownum-inner .rowlink, .rownum-label { min-width: var(--num-width, 1ch); text-align: end; font-variant-numeric: tabular-nums; }
+
+/* Main action with a menu arrow attached to its end. */
+.split-button { display: inline-flex; }
+.split-button button:first-child { border-start-end-radius: 0; border-end-end-radius: 0; }
+.split-button button:last-child {
+  padding-inline: 8px;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-inline-start-color: rgba(255, 255, 255, .35);
+}
 
 .toggle { display: inline-flex; }
 .toggle button { border-radius: 0; }

@@ -19,6 +19,7 @@ const els = {
   actions: $('actions'),
   fileInfo: $('fileInfo'),
   downloadBtn: $('downloadBtn'),
+  downloadMenuBtn: $('downloadMenuBtn'),
   resetBtn: $('resetBtn'),
   tableView: $('tableView'),
   recordView: $('recordView'),
@@ -722,28 +723,45 @@ document.body.appendChild(insertMenu);
 let menuButton = null; // + button the open menu belongs to
 let menuActions = [];
 
-function toggleInsertMenu(btn, items) {
+// Items are [translation key, action] pairs, or [translation key, items] for a labelled group.
+// anchor is the element the menu lines up with; defaults to the button itself.
+function toggleInsertMenu(btn, items, anchor = btn) {
   const wasOpen = menuButton === btn;
   closeInsertMenu();
   if (wasOpen) return;
   menuButton = btn;
-  menuActions = items.map(([, action]) => action);
+  menuActions = [];
   btn.setAttribute('aria-expanded', 'true');
-  insertMenu.replaceChildren(...items.map(([key], i) => {
+  const build = ([key, action]) => {
+    if (Array.isArray(action)) {
+      const group = document.createElement('div');
+      group.className = 'menu-group';
+      group.setAttribute('role', 'group');
+      const label = document.createElement('div');
+      label.className = 'menu-group-label';
+      label.id = `menu-group-${menuActions.length}`;
+      label.textContent = t(key);
+      group.setAttribute('aria-labelledby', label.id);
+      group.append(label, ...action.map(build));
+      return group;
+    }
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'secondary';
     item.setAttribute('role', 'menuitem');
     item.textContent = t(key);
-    item.dataset.index = i;
+    item.dataset.index = menuActions.push(action) - 1;
     return item;
-  }));
+  };
+  insertMenu.replaceChildren(...items.map(build));
   insertMenu.hidden = false;
-  const rect = btn.getBoundingClientRect();
+  const rect = anchor.getBoundingClientRect();
   const rtl = document.documentElement.dir === 'rtl';
+  const left = rtl ? rect.right - insertMenu.offsetWidth : rect.left;
+  const maxLeft = document.documentElement.clientWidth - insertMenu.offsetWidth - 8;
   insertMenu.style.top = `${rect.bottom + 4}px`;
-  insertMenu.style.left = `${rtl ? rect.right - insertMenu.offsetWidth : rect.left}px`;
-  insertMenu.firstChild.focus();
+  insertMenu.style.left = `${Math.max(8, Math.min(left, maxLeft))}px`;
+  insertMenu.querySelector('button').focus();
 }
 
 function closeInsertMenu() {
@@ -755,7 +773,10 @@ function closeInsertMenu() {
 
 insertMenu.addEventListener('click', (e) => {
   const item = e.target.closest('button');
-  if (item) menuActions[Number(item.dataset.index)]();
+  if (!item) return;
+  const action = menuActions[Number(item.dataset.index)];
+  closeInsertMenu();
+  action();
 });
 
 document.addEventListener('pointerdown', (e) => {
@@ -813,14 +834,66 @@ els.recordViewBtn.addEventListener('click', () => setView('record'));
 
 // ---------- Download ----------
 
-els.downloadBtn.addEventListener('click', () => {
-  const csv = data.hasHeader ? toCSV(data.headers, data.rows, data.delimiter) : toCSV(data.rows[0] || [], data.rows.slice(1), data.delimiter);
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+// The header row plus data rows as written to a file. Without a header row the first data row goes first.
+function exportTable() {
+  return data.hasHeader ? [data.headers, data.rows] : [data.rows[0] || [], data.rows.slice(1)];
+}
+
+function download(content, type, ext) {
+  const blob = new Blob([content], { type });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = data.isNew ? data.name : data.name.replace(/\.[^.]*$/, '') + `-${t('editedSuffix')}.csv`;
+  const base = data.name.replace(/\.[^.]*$/, '');
+  a.download = data.isNew ? `${base}.${ext}` : `${base}-${t('editedSuffix')}.${ext}`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// Short message at the bottom of the screen, e.g. after copying.
+const toast = document.createElement('div');
+toast.className = 'toast';
+toast.setAttribute('role', 'status');
+toast.hidden = true;
+document.body.appendChild(toast);
+let toastTimer = 0;
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (toast.hidden = true), 2500);
+}
+
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(t('copied'));
+  } catch {
+    showToast(t('copyFailed'));
+  }
+}
+
+const EXPORTS = {
+  csv: () => download('\ufeff' + toCSV(...exportTable(), data.delimiter), 'text/csv;charset=utf-8', 'csv'),
+  xlsx: () =>
+    download(
+      toXLSX(...exportTable(), data.hasHeader, data.name.replace(/\.[^.]*$/, '')),
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'xlsx',
+    ),
+  txt: () => download(toText(...exportTable(), data.hasHeader), 'text/plain;charset=utf-8', 'txt'),
+  copyTxt: () => copy(toText(...exportTable(), data.hasHeader)),
+  md: () => download(toMarkdown(...exportTable()), 'text/markdown;charset=utf-8', 'md'),
+  copyMd: () => copy(toMarkdown(...exportTable())),
+};
+
+els.downloadBtn.addEventListener('click', EXPORTS.csv);
+els.downloadMenuBtn.addEventListener('click', () => {
+  toggleInsertMenu(els.downloadMenuBtn, [
+    ['exportXlsx', EXPORTS.xlsx],
+    ['exportTxt', [['downloadFile', EXPORTS.txt], ['copyClipboard', EXPORTS.copyTxt]]],
+    ['exportMd', [['downloadFile', EXPORTS.md], ['copyClipboard', EXPORTS.copyMd]]],
+  ], els.downloadBtn.parentElement);
 });
 
 // ---------- Wiring ----------
